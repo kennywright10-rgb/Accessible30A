@@ -1,43 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// GET /api/properties — Public property search
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// GET /api/properties
 export async function GET(request: NextRequest) {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !key) {
-      return NextResponse.json(
-        { error: 'Missing Supabase credentials', hint: 'Check environment variables' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Missing credentials' }, { status: 500 });
     }
 
     const supabase = createClient(url, key);
 
-    const { data, error } = await supabase
+    // Simple query - no filters, no ordering, just get everything
+    const { data, error, count } = await supabase
       .from('properties')
-      .select('id, name, slug, property_type, address, city, state, bedrooms, bathrooms, sleeps, description, ars_score, booking_url, vrbo_url, airbnb_url, hero_image_url, featured, flagship, status, price_min, price_max, manager_company, meta_title, meta_description')
-      .order('flagship', { ascending: false })
-      .order('featured', { ascending: false })
-      .limit(20);
+      .select('*', { count: 'exact' });
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Database query failed', details: error.message, code: error.code },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        error: 'Query failed',
+        details: error.message,
+        code: error.code,
+        hint: error.hint,
+      }, { status: 500 });
     }
 
     return NextResponse.json({
-      data: data || [],
-      meta: { total: data?.length || 0 },
+      total_rows: data?.length || 0,
+      count: count,
+      names: data?.map(p => p.name) || [],
+      data: data,
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: 'Unexpected error', details: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
