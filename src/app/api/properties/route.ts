@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// GET /api/properties
 export async function GET(request: NextRequest) {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,7 +15,6 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(url, key);
 
-    // Simple query - no filters, no ordering, just get everything
     const { data, error, count } = await supabase
       .from('properties')
       .select('*', { count: 'exact' });
@@ -34,7 +32,6 @@ export async function GET(request: NextRequest) {
       total_rows: data?.length || 0,
       count: count,
       names: data?.map(p => p.name) || [],
-      data: data,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
